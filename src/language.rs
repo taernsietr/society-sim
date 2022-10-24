@@ -2,9 +2,9 @@ use rand::{Rng, prelude::SliceRandom};
 
 pub fn random_word() -> String {
     let c = vec!["p", "t", "k", "b", "d", "g", "ts", "dz", "tʃ", "dʒ", "f", "v", "θ", "ð", "s", "z", "ʃ", "ʒ", "x", "ɣ", "h", "r", "l", "y", "w", "m", "n"];
-    let v = vec!["i", "a", "u"];
+    let v = vec!["i", "a", "u", "e", "o"];
     let e = vec!["θ", "ð", "s", "ʃ", "z", "ʒ", "x", "ɣ", "n"]; 
-    let patterns = vec!["VV", "VE", "CV", "CVE"];
+    let patterns = vec!["VE", "CV"];
 
     let mut rng = rand::thread_rng();
     let mut word = "".to_string();

@@ -43,7 +43,7 @@ pub struct Human {
     pub family: String,
     gender: Gender,
     sexuality: Sexuality,
-    age: u8,
+    pub age: (u8, u8),
     social_score: u8,
     phenotype: u16,
 }
@@ -51,7 +51,7 @@ pub struct Human {
 impl Human {
 
     #[allow(dead_code)]
-    pub fn new(name: String, family: String, gender: Gender, sexuality: Sexuality, age: u8, social_score: u8, phenotype: u16) -> Human {
+    pub fn new(name: String, family: String, gender: Gender, sexuality: Sexuality, age: (u8, u8), social_score: u8, phenotype: u16) -> Human {
         Human {
             name,
             family,
@@ -73,7 +73,7 @@ impl Human {
             family: random_word(),
             gender: g,
             sexuality: s,
-            age: rng.gen_range(1..65),
+            age: (rng.gen_range(1..65), rng.gen_range(1..11)),
             social_score: rng.gen_range(0..255),
             phenotype: rng.gen_range(0..65535),
         }
@@ -89,9 +89,19 @@ impl Human {
             family,
             gender: g,
             sexuality: s,
-            age: rng.gen_range(1..65),
+            age: (rng.gen_range(1..65), rng.gen_range(1..11)),
             social_score: rng.gen_range(0..255),
             phenotype: rng.gen_range(0..65535),
+        }
+    }
+
+    pub fn tick(&mut self) {
+        self.age.1 += 1;
+        if self.age.1 == 12 {
+            self.age.0 += 1;
+            self.age.1 = 0;
+        } else {
+            self.age.1 += 1;
         }
     }
 }
