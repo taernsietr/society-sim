@@ -1,31 +1,20 @@
-mod language;
 mod human;
-mod housing;
+mod helpers;
 
-use human::Human;
+use human::Population;
+use helpers::Parameters;
 
 fn main() {
-    // let person = Human::new_random();
-    let mut population: Vec<Human> = vec![];
-    for _ in 0..5 {
-        population.push(Human::new_random());
-    }
+    let params = Parameters { running_time: 365 * 2, initial_pop: 8 };
+    let mut population = Population::new(params.initial_pop);
 
-    let mut time = (0, 1);
-
-    for _ in 0..35 {
-        for index in 0..population.len() {
-            population[index].tick();
-        }
-        if time.1 == 12 {
-            time.0 += 1;
-            time.1 = 1;
-        } else {
-            time.1 += 1;
+    for _ in 0..params.running_time {
+        for person in population.population.iter_mut() {
+            person.tick();
         }
     }
 
-    for (index, p) in population.into_iter().enumerate() {
-        println!("{}. {}, {} - age: {:?}", index+1, p.name, p.family, p.age);
+    for person in population.population.iter() {
+        population.get_relationships(person.get_id());
     }
 }
