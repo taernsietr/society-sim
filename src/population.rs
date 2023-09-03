@@ -1,11 +1,10 @@
 use rand::Rng;
+use rand::seq::SliceRandom;
 
 use crate::helpers::request_word;
-use crate::attributes::RelationshipType;
+use crate::attributes::{MAX_AGE, LEGAL_AGE, MAX_FAMILY_SIZE, RelationshipType};
 use crate::human::Human;
 use crate::relationship::Relationship;
-
-const MAX_FAMILY_SIZE: usize = 5;
 
 pub struct Population {
     pub population: Vec<Human>
@@ -28,14 +27,57 @@ impl Population {
 
     fn new_family(&mut self, size: usize) {
         let mut members: Vec<Human> = Vec::new();
+        let mut rng = rand::thread_rng();
         let family_root_id = self.population.len();
         let family_name = request_word();
 
-        self.population.push(Human::new(family_root_id, None, Some(family_name.clone()), None, None, None, None, None));
+        // Using first person as family root
+        self.population.push(Human::new(family_root_id, None, Some(family_name.clone()), None, None, Some(rng.gen_range(LEGAL_AGE..=MAX_AGE)), None, None));
+        let family_root_age = self.population[family_root_id].get_age();
+
         for person in family_root_id+1..family_root_id+size {
             let relation: RelationshipType = rand::random();
-            self.population.push(Human::new(person, None, Some(family_name.clone()), None, None, None, None, None));
-            Population::create_relationship(&mut self.population, (family_root_id, person), relation);
+
+            // Child / Parent: assume minimum parent age at birth of 18 and max death age, relate phenotypes;
+            // Spouse: filter minimum age of 18, maximum age difference of self age - self age / 2 + 7, filter genders and sexuality
+            // Sibling: analyze parents
+            match relation {
+                RelationshipType::Child => {
+                    let age = rng.gen_range(0..=(family_root_age - LEGAL_AGE));
+                    self.population.push(Human::new(person, None, Some(family_name.clone()), None, None, Some(age), None, None));
+                    Population::create_relationship(&mut self.population, (family_root_id, person), relation);
+                },
+                RelationshipType::Parent => {
+                    let age = rng.gen_range((family_root_age + LEGAL_AGE)..=MAX_AGE);
+                    self.population.push(Human::new(person, None, Some(family_name.clone()), None, None, Some(age), None, None));
+                    Population::create_relationship(&mut self.population, (family_root_id, person), relation);
+                },
+                RelationshipType::Spouse => {
+                    let age = rng.gen_range(Ord::max(family_root_age / 2 + 7 * 365, LEGAL_AGE)..((family_root_age - 7 * 365) * 2));
+                    let valid_spouses = self.population[family_root_id].get_valid_spouses().choose(&mut rng);
+                    self.population.push(Human::new(person, None, Some(family_name.clone()), Some(valid_spouses.unwrap().0), Some(valid_spouses.unwrap().1), Some(age), None, None));
+                    Population::create_relationship(&mut self.population, (family_root_id, person), relation);
+                },
+                RelationshipType::Sibling => {
+                    let parents = self.population[family_root_id]
+                        .get_relationships()
+                        .iter()
+                        .filter(|x| matches!(x.get_relationship_type(), RelationshipType::Parent))
+                        .unwrap();
+
+                    let parent_age: usize = if parents.len() > 0 { *parents
+                        .map(|x| self.population[x.get_person_id()].get_age()).collect::<Vec<usize>>()
+                        .iter()
+                        .min()
+                        .unwrap();
+                    } 
+
+                    let age = rng.gen_range(0..(parent_age - LEGAL_AGE));
+                    self.population.push(Human::new(person, None, Some(family_name.clone()), None, None, Some(age), None, None));
+                    Population::create_relationship(&mut self.population, (family_root_id, person), relation);
+                }
+            }
+
         }
 
         self.population.append(&mut members);

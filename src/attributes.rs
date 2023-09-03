@@ -1,7 +1,12 @@
 use std::fmt;
 use rand::{Rng, distributions::{Distribution, Standard}};
 
-#[derive(Clone)]
+pub const MAX_INITIAL_AGE: usize = 60 * 365;
+pub const MAX_AGE: usize = 110 * 365;
+pub const LEGAL_AGE: usize = 18 * 365;
+pub const MAX_FAMILY_SIZE: usize = 5;
+
+#[derive(Clone, Copy)]
 pub enum Gender {
     CisMale,
     CisFemale,
@@ -10,7 +15,7 @@ pub enum Gender {
     NonBinary,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum Sexuality {
     Heterosexual,
     Homosexual,
