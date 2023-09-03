@@ -1,7 +1,10 @@
-mod human;
 mod helpers;
+mod attributes;
+mod human;
+mod population;
+mod relationship;
 
-use human::Population;
+use population::Population;
 use helpers::Parameters;
 
 fn main() {

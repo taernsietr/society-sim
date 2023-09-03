@@ -1,177 +1,12 @@
 use std::fmt;
-use rand::{Rng, distributions::{Distribution, Standard}};
+use rand::Rng;
 
 use crate::helpers::request_word;
+use crate::attributes::{Sexuality, Gender};
+use crate::relationship::Relationship;
 
 const MAX_INITIAL_AGE: u32 = 60 * 365;
 const MAX_AGE: u32 = 110 * 365;
-const MAX_FAMILY_SIZE: usize = 5;
-
-#[derive(Clone)]
-pub enum Gender {
-    CisMale,
-    CisFemale,
-    TransMale,
-    TransFemale,
-    NonBinary,
-}
-
-#[derive(Clone)]
-pub enum Sexuality {
-    Heterosexual,
-    Homosexual,
-    Pansexual,
-}
-
-#[derive(Clone)]
-pub enum RelationshipType {
-    Parent,
-    Child,
-    Sibling,
-    Spouse,
-}
-
-impl Distribution<Gender> for Standard {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Gender {
-        match rng.gen_range(0..5) {
-            0 => Gender::CisMale,
-            1 => Gender::CisFemale,
-            2 => Gender::TransMale,
-            3 => Gender::TransFemale,
-            _ => Gender::NonBinary
-        }
-    }
-}
-
-impl Distribution<Sexuality> for Standard {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Sexuality {
-        match rng.gen_range(0..3) {
-            0 => Sexuality::Heterosexual,
-            1 => Sexuality::Homosexual,
-            _ => Sexuality::Pansexual
-        }
-    }
-}
-
-impl Distribution<RelationshipType> for Standard {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> RelationshipType {
-        match rng.gen_range(0..3) {
-            0 => RelationshipType::Parent,
-            1 => RelationshipType::Child,
-            2 => RelationshipType::Sibling,
-            _ => RelationshipType::Spouse,
-        }
-    }
-}
-
-impl fmt::Display for Gender {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Gender::CisMale => write!(f, "Cisgender Male"),
-            Gender::CisFemale => write!(f, "Cisgender Female"),
-            Gender::TransMale => write!(f, "Transgender Male"),
-            Gender::TransFemale => write!(f, "Transgender Female"),
-            Gender::NonBinary => write!(f, "Non-Binary")
-        }
-    }
-}
-
-impl fmt::Display for Sexuality {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Sexuality::Heterosexual => write!(f, "Heterosexual"),
-            Sexuality::Homosexual => write!(f, "Homosexual"),
-            Sexuality::Pansexual => write!(f, "Pansexual"),
-        }
-    }
-}
-
-impl fmt::Display for RelationshipType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            RelationshipType::Parent => write!(f, "parent"),
-            RelationshipType::Child => write!(f, "child"),
-            RelationshipType::Sibling => write!(f, "sibling"),
-            RelationshipType::Spouse => write!(f, "spouse")
-        }
-    }
-}
-
-#[derive(Clone)]
-pub struct Relationship {
-    relation: RelationshipType,
-    person: usize,
-}
-
-pub struct Population {
-    pub population: Vec<Human>
-}
-
-impl Population {
-    pub fn new(pop_size: usize) -> Population {
-        let mut population = Population { population: Vec::<Human>::new() };
-        let mut rng = rand::thread_rng();
-        let mut remaining_pop = pop_size;
-
-        while remaining_pop > 0 {
-            let family_size = rng.gen_range(1..=Ord::min(MAX_FAMILY_SIZE, remaining_pop));
-            remaining_pop -= family_size;
-            population.new_family(family_size)
-        }
-
-        population
-    }
-
-    fn new_family(&mut self, size: usize) {
-        let mut members: Vec<Human> = Vec::new();
-        let family_root_id = self.population.len();
-        let family_name = request_word();
-
-        self.population.push(Human::new(family_root_id, None, Some(family_name.clone()), None, None, None, None, None));
-        for person in family_root_id+1..family_root_id+size {
-            let relation: RelationshipType = rand::random();
-            self.population.push(Human::new(person, None, Some(family_name.clone()), None, None, None, None, None));
-            Population::create_relationship(&mut self.population, (family_root_id, person), relation);
-        }
-
-        self.population.append(&mut members);
-    }
-
-    pub fn create_relationship(population: &mut [Human], indices: (usize, usize), relationship: RelationshipType) {
-        let (relationship_1, relationship_2) = match relationship {
-            RelationshipType::Parent => {(
-                Relationship { relation: RelationshipType::Parent, person: indices.1 },
-                Relationship { relation: RelationshipType::Child, person: indices.0 }
-            )},
-            RelationshipType::Child => {(
-                Relationship { relation: RelationshipType::Child, person: indices.1 },
-                Relationship { relation: RelationshipType::Parent, person: indices.0 }
-            )},
-            RelationshipType::Spouse => {(
-                Relationship { relation: RelationshipType::Spouse, person: indices.1 },
-                Relationship { relation: RelationshipType::Spouse, person: indices.0 }
-            )},
-            RelationshipType::Sibling => {(
-                Relationship { relation: RelationshipType::Sibling, person: indices.1 },
-                Relationship { relation: RelationshipType::Sibling, person: indices.0 }
-            )}
-        };
-            
-        population[indices.0].relationships.push(relationship_1);
-        population[indices.1].relationships.push(relationship_2);
-    }
-
-    // TODO: Review
-    pub fn get_relationships(&self, id: usize) {
-        for relationship in &self.population[id].relationships {
-            println!("{} is {}'s {}",
-                self.population[relationship.person].get_name(),
-                self.population[id].get_name(),
-                relationship.relation
-            );
-        }
-    }
-}
 
 #[derive(Clone)]
 pub struct Human {
@@ -219,22 +54,10 @@ impl fmt::Display for Human {
 impl Human {
     pub fn get_id(&self) -> usize { self.id }
     pub fn get_name(&self) -> &String { &self.name }
-    pub fn get_family(&self) -> &String { &self.family }
-    pub fn get_gender(&self) -> &Gender { &self.gender }
-    pub fn get_sexuality(&self) -> &Sexuality { &self.sexuality }
-    pub fn get_age(&self) -> &u32 { &self.age }
-    pub fn get_phenotype(&mut self) -> &u32 { &self.phenotype }
-    pub fn get_relationships(&self) -> &[Relationship] { &self.relationships }
     pub fn get_alive(&self) -> bool { self.alive }
+    pub fn get_relationships(&self) -> &[Relationship] { &self.relationships }
 
-    pub fn set_name(&mut self, value: String) { self.name = value }
-    pub fn set_family(&mut self, value: String) { self.family = value }
-    pub fn set_gender(&mut self, value: Gender) { self.gender = value }
-    pub fn set_sexuality(&mut self, value: Sexuality) { self.sexuality = value }
-    pub fn set_age(&mut self, value: u32) { self.age = value }
-    pub fn set_phenotype(&mut self, value: u32) { self.phenotype = value }
-    pub fn set_relationships(&mut self, value: Vec::<Relationship>) { self.relationships = value }
-    pub fn set_alive(&mut self, value: bool) { self.alive = value }
+    pub fn add_relationship(&mut self, relationship: Relationship) { self.relationships.push(relationship); }
 
     pub fn tick(&mut self) {
         if self.alive {
