@@ -15,6 +15,7 @@ fn main() {
     }
 
     for person in population.population.iter() {
-        population.get_relationships(person.get_id());
+        // population.get_relationships(person.get_id());
+        println!("{}", person);
     }
 }

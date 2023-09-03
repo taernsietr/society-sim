@@ -5,6 +5,7 @@ use crate::helpers::request_word;
 
 const MAX_INITIAL_AGE: u32 = 60 * 365;
 const MAX_AGE: u32 = 110 * 365;
+const MAX_FAMILY_SIZE: usize = 5;
 
 #[derive(Clone)]
 pub enum Gender {
@@ -25,7 +26,7 @@ pub enum Sexuality {
 #[derive(Clone)]
 pub enum RelationshipType {
     Parent,
-    Offspring,
+    Child,
     Sibling,
     Spouse,
 }
@@ -56,7 +57,7 @@ impl Distribution<RelationshipType> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> RelationshipType {
         match rng.gen_range(0..3) {
             0 => RelationshipType::Parent,
-            1 => RelationshipType::Offspring,
+            1 => RelationshipType::Child,
             2 => RelationshipType::Sibling,
             _ => RelationshipType::Spouse,
         }
@@ -89,7 +90,7 @@ impl fmt::Display for RelationshipType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             RelationshipType::Parent => write!(f, "parent"),
-            RelationshipType::Offspring => write!(f, "offspring"),
+            RelationshipType::Child => write!(f, "child"),
             RelationshipType::Sibling => write!(f, "sibling"),
             RelationshipType::Spouse => write!(f, "spouse")
         }
@@ -108,25 +109,42 @@ pub struct Population {
 
 impl Population {
     pub fn new(pop_size: usize) -> Population {
-        let mut population: Vec<Human> = Vec::new();
+        let mut population = Population { population: Vec::<Human>::new() };
+        let mut rng = rand::thread_rng();
+        let mut remaining_pop = pop_size;
 
-        for id in 0..pop_size {
-            population.push(Human::new(id, None, None, None, None, None, None, None));
+        while remaining_pop > 0 {
+            let family_size = rng.gen_range(1..=Ord::min(MAX_FAMILY_SIZE, remaining_pop));
+            remaining_pop -= family_size;
+            population.new_family(family_size)
         }
 
-        Population::create_relationship(&mut population, (0, 1), RelationshipType::Parent);
-        
-        Population { population }
+        population
+    }
+
+    fn new_family(&mut self, size: usize) {
+        let mut members: Vec<Human> = Vec::new();
+        let family_root_id = self.population.len();
+        let family_name = request_word();
+
+        self.population.push(Human::new(family_root_id, None, Some(family_name.clone()), None, None, None, None, None));
+        for person in family_root_id+1..family_root_id+size {
+            let relation: RelationshipType = rand::random();
+            self.population.push(Human::new(person, None, Some(family_name.clone()), None, None, None, None, None));
+            Population::create_relationship(&mut self.population, (family_root_id, person), relation);
+        }
+
+        self.population.append(&mut members);
     }
 
     pub fn create_relationship(population: &mut [Human], indices: (usize, usize), relationship: RelationshipType) {
         let (relationship_1, relationship_2) = match relationship {
             RelationshipType::Parent => {(
                 Relationship { relation: RelationshipType::Parent, person: indices.1 },
-                Relationship { relation: RelationshipType::Offspring, person: indices.0 }
+                Relationship { relation: RelationshipType::Child, person: indices.0 }
             )},
-            RelationshipType::Offspring => {(
-                Relationship { relation: RelationshipType::Offspring, person: indices.1 },
+            RelationshipType::Child => {(
+                Relationship { relation: RelationshipType::Child, person: indices.1 },
                 Relationship { relation: RelationshipType::Parent, person: indices.0 }
             )},
             RelationshipType::Spouse => {(
@@ -138,11 +156,12 @@ impl Population {
                 Relationship { relation: RelationshipType::Sibling, person: indices.0 }
             )}
         };
-        
+            
         population[indices.0].relationships.push(relationship_1);
         population[indices.1].relationships.push(relationship_2);
     }
-    
+
+    // TODO: Review
     pub fn get_relationships(&self, id: usize) {
         for relationship in &self.population[id].relationships {
             println!("{} is {}'s {}",
