@@ -38,9 +38,6 @@ impl Population {
         for person in family_root_id+1..family_root_id+size {
             let relation: RelationshipType = rand::random();
 
-            // Child / Parent: assume minimum parent age at birth of 18 and max death age, relate phenotypes;
-            // Spouse: filter minimum age of 18, maximum age difference of self age - self age / 2 + 7, filter genders and sexuality
-            // Sibling: analyze parents
             match relation {
                 RelationshipType::Child => {
                     let age = rng.gen_range(0..=(family_root_age - LEGAL_AGE));
@@ -59,27 +56,26 @@ impl Population {
                     Population::create_relationship(&mut self.population, (family_root_id, person), relation);
                 },
                 RelationshipType::Sibling => {
-                    let parents = self.population[family_root_id]
+                    let lower_parent_age = self.population[family_root_id]
                         .get_relationships()
                         .iter()
                         .filter(|x| matches!(x.get_relationship_type(), RelationshipType::Parent))
-                        .unwrap();
-
-                    let parent_age: usize = if parents.len() > 0 { *parents
-                        .map(|x| self.population[x.get_person_id()].get_age()).collect::<Vec<usize>>()
+                        .map(|x| self.population[x.get_person_id()].get_age())
+                        .collect::<Vec<usize>>()
                         .iter()
                         .min()
-                        .unwrap();
-                    } 
+                        .copied();
 
-                    let age = rng.gen_range(0..(parent_age - LEGAL_AGE));
-                    self.population.push(Human::new(person, None, Some(family_name.clone()), None, None, Some(age), None, None));
-                    Population::create_relationship(&mut self.population, (family_root_id, person), relation);
+                    let age = match lower_parent_age {
+                        Some(age) => { Some(rng.gen_range(0..(age - LEGAL_AGE))) }
+                        None => None
+                    };
+                    
+                    self.population.push(Human::new(person, None, Some(family_name.clone()), None, None, age, None, None));
                 }
             }
-
+            Population::create_relationship(&mut self.population, (family_root_id, person), relation);
         }
-
         self.population.append(&mut members);
     }
 
