@@ -12,8 +12,8 @@ pub struct Population {
 
 impl Population {
     pub fn new(pop_size: usize) -> Population {
-        let mut population = Population { population: Vec::<Human>::new() };
         let mut rng = rand::thread_rng();
+        let mut population = Population { population: Vec::<Human>::new() };
         let mut remaining_pop = pop_size;
 
         while remaining_pop > 0 {
@@ -26,8 +26,8 @@ impl Population {
     }
 
     fn new_family(&mut self, size: usize) {
-        let mut members: Vec<Human> = Vec::new();
         let mut rng = rand::thread_rng();
+        let mut members: Vec<Human> = Vec::new();
         let family_root_id = self.population.len();
         let family_name = request_word();
 
@@ -48,7 +48,7 @@ impl Population {
                     )
                 },
                 RelationshipType::Sibling => {
-                    let lower_parent_age = self.population[family_root_id]
+                    let lower_parent_age: Option<usize> = self.population[family_root_id]
                         .get_relationships()
                         .iter()
                         .filter(|x| matches!(x.get_relationship_type(), RelationshipType::Parent))
@@ -70,6 +70,10 @@ impl Population {
             Population::create_relationship(&mut self.population, (family_root_id, person), relation);
         }
         self.population.append(&mut members);
+    }
+
+    pub fn run_meetups(&mut self) {
+        
     }
 
     pub fn create_relationship(population: &mut [Human], indices: (usize, usize), relationship: RelationshipType) {
@@ -98,11 +102,11 @@ impl Population {
 
     // TODO: Review
     #[allow(dead_code)]
-    pub fn get_relationships(&self, id: usize) {
-        for relationship in self.population[id].get_relationships() {
+    pub fn print_relationships(&self, person_id: usize) {
+        for relationship in self.population[person_id].get_relationships() {
             println!("{} is {}'s {}",
                 self.population[relationship.get_person_id()].get_name(),
-                self.population[id].get_name(),
+                self.population[person_id].get_name(),
                 relationship.get_relationship_type()
             );
         }

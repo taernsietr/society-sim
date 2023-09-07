@@ -4,7 +4,7 @@ use rand::{Rng, distributions::{Distribution, Standard}};
 pub const MAX_INITIAL_AGE: usize = 60 * 365;
 pub const MAX_AGE: usize = 110 * 365;
 pub const LEGAL_AGE: usize = 18 * 365;
-pub const MAX_FAMILY_SIZE: usize = 5;
+pub const MAX_FAMILY_SIZE: usize = 8;
 
 #[derive(Clone, Copy)]
 pub enum Gender {
@@ -32,22 +32,24 @@ pub enum RelationshipType {
 
 impl Distribution<Gender> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Gender {
-        match rng.gen_range(0..5) {
-            0 => Gender::CisMale,
-            1 => Gender::CisFemale,
-            2 => Gender::TransMale,
-            3 => Gender::TransFemale,
-            _ => Gender::NonBinary
+        match rng.gen_range(1..100) {
+            01..=030 => Gender::CisMale,
+            31..=060 => Gender::CisFemale,
+            61..=075 => Gender::TransMale,
+            76..=090 => Gender::TransFemale,
+            91..=100 => Gender::NonBinary,
+            _ => unreachable!()
         }
     }
 }
 
 impl Distribution<Sexuality> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Sexuality {
-        match rng.gen_range(0..3) {
-            0 => Sexuality::Heterosexual,
-            1 => Sexuality::Homosexual,
-            _ => Sexuality::Pansexual
+        match rng.gen_range(1..100) {
+            01..=050 => Sexuality::Heterosexual,
+            51..=070 => Sexuality::Homosexual,
+            71..=100 => Sexuality::Pansexual,
+            _ => unreachable!()
         }
     }
 }

@@ -12,13 +12,10 @@ fn main() {
     let mut population = Population::new(params.initial_pop);
 
     for _ in 0..params.running_time {
-        for person in population.population.iter_mut() {
-            person.tick();
-        }
+        population.population.iter_mut().for_each(|person| person.tick());
     }
 
     for person in population.population.iter() {
-        // population.get_relationships(person.get_id());
         println!("{}", person);
     }
 }
