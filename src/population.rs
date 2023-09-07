@@ -2,7 +2,7 @@ use rand::Rng;
 use rand::seq::SliceRandom;
 
 use crate::helpers::request_word;
-use crate::attributes::{MAX_AGE, LEGAL_AGE, MAX_FAMILY_SIZE, RelationshipType};
+use crate::attributes::{MAX_AGE, LEGAL_AGE, MAX_FAMILY_SIZE, Gender, Sexuality, RelationshipType};
 use crate::human::Human;
 use crate::relationship::Relationship;
 
@@ -38,22 +38,14 @@ impl Population {
         for person in family_root_id+1..family_root_id+size {
             let relation: RelationshipType = rand::random();
 
-            match relation {
-                RelationshipType::Child => {
-                    let age = rng.gen_range(0..=(family_root_age - LEGAL_AGE));
-                    self.population.push(Human::new(person, None, Some(family_name.clone()), None, None, Some(age), None, None));
-                    Population::create_relationship(&mut self.population, (family_root_id, person), relation);
-                },
-                RelationshipType::Parent => {
-                    let age = rng.gen_range((family_root_age + LEGAL_AGE)..=MAX_AGE);
-                    self.population.push(Human::new(person, None, Some(family_name.clone()), None, None, Some(age), None, None));
-                    Population::create_relationship(&mut self.population, (family_root_id, person), relation);
-                },
+            let (age, spouse_gender, spouse_sexuality): (Option<usize>, Option<Gender>, Option<Sexuality>) = match relation {
+                RelationshipType::Child => { (Some(rng.gen_range(0..=(family_root_age - LEGAL_AGE))), None, None) },
+                RelationshipType::Parent => { (Some(rng.gen_range((family_root_age + LEGAL_AGE)..=MAX_AGE)), None, None) },
                 RelationshipType::Spouse => {
-                    let age = rng.gen_range(Ord::max(family_root_age / 2 + 7 * 365, LEGAL_AGE)..((family_root_age - 7 * 365) * 2));
-                    let valid_spouses = self.population[family_root_id].get_valid_spouses().choose(&mut rng);
-                    self.population.push(Human::new(person, None, Some(family_name.clone()), Some(valid_spouses.unwrap().0), Some(valid_spouses.unwrap().1), Some(age), None, None));
-                    Population::create_relationship(&mut self.population, (family_root_id, person), relation);
+                    let spouse = self.population[family_root_id].get_valid_spouses().choose(&mut rng).unwrap();
+                    (
+                        Some(rng.gen_range(Ord::max(family_root_age / 2 + 7 * 365, LEGAL_AGE)..((family_root_age - 7 * 365) * 2))), Some(spouse.0), Some(spouse.1)
+                    )
                 },
                 RelationshipType::Sibling => {
                     let lower_parent_age = self.population[family_root_id]
@@ -66,14 +58,15 @@ impl Population {
                         .min()
                         .copied();
 
-                    let age = match lower_parent_age {
-                        Some(age) => { Some(rng.gen_range(0..(age - LEGAL_AGE))) }
-                        None => None
-                    };
-                    
-                    self.population.push(Human::new(person, None, Some(family_name.clone()), None, None, age, None, None));
+                    if let Some(age) = lower_parent_age {
+                        (Some(rng.gen_range(0..(age - LEGAL_AGE))), None, None)
+                    }
+                    else {
+                        (Some(rng.gen_range(0..=MAX_AGE)), None, None)
+                    }
                 }
-            }
+            };
+            self.population.push(Human::new(person, None, Some(family_name.clone()), spouse_gender, spouse_sexuality, age, None, None));
             Population::create_relationship(&mut self.population, (family_root_id, person), relation);
         }
         self.population.append(&mut members);
