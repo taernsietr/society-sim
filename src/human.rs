@@ -53,6 +53,8 @@ impl fmt::Display for Human {
 impl Human {
     pub fn get_id(&self) -> usize { self.id }
     pub fn get_name(&self) -> String { self.name.clone() }
+    pub fn get_gender(&self) -> Gender { self.gender }
+    pub fn get_sexuality(&self) -> Sexuality { self.sexuality }
     pub fn get_age(&self) -> usize { self.age }
     pub fn get_alive(&self) -> bool { self.alive }
     pub fn get_relationships(&self) -> &[Relationship] { &self.relationships }
@@ -60,8 +62,8 @@ impl Human {
     pub fn add_relationship(&mut self, relationship: Relationship) { self.relationships.push(relationship); }
 
     // TODO: Refactor this to something that doesn't look like a monkey wrote
-    pub fn get_valid_spouses(&self) -> &[(Gender, Sexuality)] {
-        match (&self.gender, &self.sexuality) {
+    pub fn get_valid_spouses(gender: Gender, sexuality: Sexuality) -> &'static [(Gender, Sexuality)] {
+        match (gender, sexuality) {
             (Gender::CisMale, Sexuality::Heterosexual) => &[
                 (Gender::CisFemale, Sexuality::Heterosexual),
                 (Gender::TransFemale, Sexuality::Heterosexual),
@@ -139,7 +141,9 @@ impl Human {
     }
 
     pub fn tick(&mut self) {
-        if self.alive {
+        self.age += 1;
+
+        if self.alive && self.age % 365 == 0 {
             self.check_death();
         }
     }
@@ -147,14 +151,12 @@ impl Human {
     fn check_death(&mut self) {
         let mut rng = rand::thread_rng(); 
 
-        self.age += 1;
-
-        let death_threshold = (self.age / MAX_AGE) as f32;
-        let roll = rng.gen_range(0.0..=1.0);
+        let death_threshold = self.age * 100 / MAX_AGE;
+        let roll = rng.gen_range(0..=100);
 
         if roll <= death_threshold {
             self.alive = false;
-            println!("{}, {}, has died. [{:.2} | {:.2}]", self.name, self.get_formatted_age().0, roll, death_threshold);
+            println!("{}, {}, {}, has died. [{:.2} | {:.2}]", self.family, self.name, self.get_formatted_age().0, roll, death_threshold);
         }
     }
 

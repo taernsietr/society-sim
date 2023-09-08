@@ -12,10 +12,11 @@ fn main() {
     let mut population = Population::new(params.initial_pop);
 
     for _ in 0..params.running_time {
-        population.population.iter_mut().for_each(|person| person.tick());
+        population.run_ticks();
     }
 
-    for person in population.population.iter() {
-        println!("{}", person);
-    }
+    //for person in population.population.iter() {
+    //    println!("{}", person);
+    //}
+    println!("Survival rate: {}%", population.get_survival_rate());
 }
