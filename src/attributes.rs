@@ -5,8 +5,9 @@ pub const MAX_INITIAL_AGE: usize = 60 * 365;
 pub const MAX_AGE: usize = 110 * 365;
 pub const LEGAL_AGE: usize = 18 * 365;
 pub const MAX_FAMILY_SIZE: usize = 8;
+pub const MEETUP_PERIOD: usize = 14;
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Debug)]
 pub enum Gender {
     #[default]
     CisMale,
@@ -16,7 +17,7 @@ pub enum Gender {
     NonBinary,
 }
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Debug)]
 pub enum Sexuality {
     #[default]
     Heterosexual,
@@ -24,7 +25,7 @@ pub enum Sexuality {
     Pansexual,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum RelationshipType {
     Parent,
     Child,

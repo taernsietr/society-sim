@@ -3,12 +3,13 @@ use rand::Rng;
 use rand::seq::{SliceRandom, IteratorRandom};
 
 use crate::helpers::request_word;
-use crate::attributes::{MAX_AGE, LEGAL_AGE, MAX_FAMILY_SIZE, Gender, Sexuality, RelationshipType};
+use crate::attributes::{MAX_AGE, LEGAL_AGE, MAX_FAMILY_SIZE, Gender, Sexuality, RelationshipType, MEETUP_PERIOD};
 use crate::human::Human;
 use crate::relationship::Relationship;
 
 #[derive(Default)]
 pub struct Population {
+    elapsed_time: usize,
     alive_pop: HashMap<usize, Human>,
     dead_pop: HashMap<usize, Human>
 }
@@ -33,6 +34,7 @@ impl Population {
             population.new_family(family_size)
         }
 
+        dbg!(population.alive_pop.len());
         population
     }
 
@@ -88,19 +90,24 @@ impl Population {
     }
 
     pub fn run_ticks(&mut self) {
-        let list: Vec<usize> = self.alive_pop
+        self.elapsed_time += 1;
+
+        let dead_ids: Vec<usize> = self.alive_pop
             .iter()
             .filter(|person| !person.1.get_alive())
             .map(|person| *person.0)
             .collect();
 
-        for id in list.iter() {
+        for id in dead_ids.iter() {
             let dead = self.alive_pop.remove_entry(id).unwrap();
             self.dead_pop.insert(dead.0, dead.1);
         }
 
         self.alive_pop.iter_mut().for_each(|person| person.1.tick());
-        self.run_meetups();
+
+        if self.elapsed_time % MEETUP_PERIOD == 0 {
+            self.run_meetups();
+        }
     }
 
     fn run_meetups(&mut self) {
@@ -114,15 +121,17 @@ impl Population {
         let person_1 = self.alive_pop.get(people[0]).unwrap();
         let person_2 = self.alive_pop.get(people[1]).unwrap();
 
-        if !person_1.has_spouse() && !person_2.has_spouse() {
-            let couple_threshold: usize = 3;
-            let roll = rng.gen_range(0..=100);
+        if person_1.get_family() != person_2.get_family() &&
+            !person_1.has_spouse() &&
+            !person_2.has_spouse() {
+                let couple_threshold: usize = 3;
+                let roll = rng.gen_range(0..=100);
 
-            if roll <= couple_threshold {
-                println!("Couple formed: ({}, {})", person_1.get_full_name(), person_2.get_full_name());
-                self.create_relationship((person_1.get_id(), person_2.get_id()), RelationshipType::Spouse);
+                if roll <= couple_threshold {
+                    println!("Couple formed: ({}, {})", person_1.get_full_name(), person_2.get_full_name());
+                    self.create_relationship((person_1.get_id(), person_2.get_id()), RelationshipType::Spouse);
+                }
             }
-        }
     }
 
     pub fn get_size(&self) -> usize {

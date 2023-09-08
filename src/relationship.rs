@@ -1,6 +1,6 @@
 use crate::attributes::RelationshipType;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Relationship {
     relationship_type: RelationshipType,
     person: usize,
