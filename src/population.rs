@@ -1,5 +1,6 @@
+use std::collections::HashMap;
 use rand::Rng;
-use rand::seq::SliceRandom;
+use rand::seq::{SliceRandom, IteratorRandom};
 
 use crate::helpers::request_word;
 use crate::attributes::{MAX_AGE, LEGAL_AGE, MAX_FAMILY_SIZE, Gender, Sexuality, RelationshipType};
@@ -8,11 +9,19 @@ use crate::relationship::Relationship;
 
 #[derive(Default)]
 pub struct Population {
-    alive_pop: Vec<Human>,
-    dead_pop: Vec<Human>
+    alive_pop: HashMap<usize, Human>,
+    dead_pop: HashMap<usize, Human>
 }
 
 impl Population {
+    fn new_id(&self) -> usize {
+        let mut key: usize = rand::random();
+        while self.alive_pop.contains_key(&key) || self.dead_pop.contains_key(&key) {
+            key = rand::random();
+        }
+        key
+    }
+
     pub fn new(pop_size: usize) -> Population {
         let mut rng = rand::thread_rng();
         let mut population = Population::default();
@@ -27,38 +36,37 @@ impl Population {
         population
     }
 
-    fn new_family(&mut self, size: usize) {
+    fn new_family(&mut self, family_size: usize) {
         let mut rng = rand::thread_rng();
-        let family_root_id = self.get_size();
         let family_name = request_word();
-
         // Using first person as family root so that relationships can be created
         // Root is guaranteed to be at least 18 years old
-        self.alive_pop.push(Human::new(family_root_id, None, Some(family_name.clone()), None, None, Some(rng.gen_range(LEGAL_AGE..=(MAX_AGE-LEGAL_AGE))), None, None));
-        let family_root_age = self.alive_pop[family_root_id].get_age();
+        let family_root_id = self.new_id();
+        let family_root = Human::new(family_root_id, None, Some(family_name.clone()), None, None, Some(rng.gen_range(LEGAL_AGE..=(MAX_AGE-LEGAL_AGE))), None, None);
+        self.alive_pop.insert(family_root_id, family_root.clone());
 
-        for person in family_root_id+1..family_root_id+size {
+        for _ in 0..family_size {
             let relation: RelationshipType = rand::random();
 
             let (age, spouse_gender, spouse_sexuality): (Option<usize>, Option<Gender>, Option<Sexuality>) = match relation {
                 RelationshipType::Child => {
-                    (Some(rng.gen_range(0..=(family_root_age - LEGAL_AGE))), None, None)
+                    (Some(rng.gen_range(0..=(family_root.get_age() - LEGAL_AGE))), None, None)
                 },
                 RelationshipType::Parent => {
-                    (Some(rng.gen_range((family_root_age + LEGAL_AGE)..=MAX_AGE)), None, None)
+                    (Some(rng.gen_range((family_root.get_age() + LEGAL_AGE)..=MAX_AGE)), None, None)
                 },
                 RelationshipType::Spouse => {
-                    let spouse = Human::get_valid_spouses(self.alive_pop[family_root_id].get_gender(), self.alive_pop[family_root_id].get_sexuality()).choose(&mut rng).unwrap();
+                    let spouse = Human::get_valid_spouses(family_root.get_gender(), family_root.get_sexuality()).choose(&mut rng).unwrap();
                     (
-                        Some(rng.gen_range(Ord::max(family_root_age / 2 + 7 * 365, LEGAL_AGE)..((family_root_age - 7 * 365) * 2))), Some(spouse.0), Some(spouse.1)
+                        Some(rng.gen_range(Ord::max(family_root.get_age() / 2 + 7 * 365, LEGAL_AGE)..((family_root.get_age() - 7 * 365) * 2))), Some(spouse.0), Some(spouse.1)
                     )
                 },
                 RelationshipType::Sibling => {
-                    let lower_parent_age: Option<usize> = self.alive_pop[family_root_id]
+                    let lower_parent_age: Option<usize> = family_root
                         .get_relationships()
                         .iter()
                         .filter(|x| matches!(x.get_relationship_type(), RelationshipType::Parent))
-                        .map(|x| self.alive_pop[x.get_person_id()].get_age())
+                        .map(|x| self.alive_pop.get(&x.get_person_id()).unwrap().get_age())
                         .collect::<Vec<usize>>()
                         .iter()
                         .min()
@@ -73,69 +81,97 @@ impl Population {
                 }
             };
 
-            self.alive_pop.push(Human::new(person, None, Some(family_name.clone()), spouse_gender, spouse_sexuality, age, None, None));
-            Population::create_relationship(&mut self.alive_pop, (family_root_id, person), relation);
+            let family_member_id = self.new_id();
+            self.alive_pop.insert(family_member_id, Human::new(family_member_id, None, Some(family_name.clone()), spouse_gender, spouse_sexuality, age, None, None));
+            self.create_relationship((family_root_id, family_member_id), relation);
         }
     }
 
     pub fn run_ticks(&mut self) {
-        self.alive_pop.iter_mut().for_each(|person| person.tick());
-        //self.run_meetups();
+        let list: Vec<usize> = self.alive_pop
+            .iter()
+            .filter(|person| !person.1.get_alive())
+            .map(|person| *person.0)
+            .collect();
+
+        for id in list.iter() {
+            let dead = self.alive_pop.remove_entry(id).unwrap();
+            self.dead_pop.insert(dead.0, dead.1);
+        }
+
+        self.alive_pop.iter_mut().for_each(|person| person.1.tick());
+        self.run_meetups();
     }
 
     fn run_meetups(&mut self) {
-        todo!()
+        let mut rng = rand::thread_rng();
+
+        let people = self.alive_pop
+            .keys()
+            .choose_multiple(&mut rng, 2)
+            .clone();
+
+        let person_1 = self.alive_pop.get(people[0]).unwrap();
+        let person_2 = self.alive_pop.get(people[1]).unwrap();
+
+        if !person_1.has_spouse() && !person_2.has_spouse() {
+            let couple_threshold: usize = 3;
+            let roll = rng.gen_range(0..=100);
+
+            if roll <= couple_threshold {
+                println!("Couple formed: ({}, {})", person_1.get_full_name(), person_2.get_full_name());
+                self.create_relationship((person_1.get_id(), person_2.get_id()), RelationshipType::Spouse);
+            }
+        }
     }
 
-    fn get_size(&self) -> usize {
+    pub fn get_size(&self) -> usize {
         self.alive_pop.len() + self.dead_pop.len()
     }
-    
+
     pub fn get_survival_rate(&self) -> usize {
         self.dead_pop.len() * 100 / self.get_size()
     }
 
-    fn create_relationship(population: &mut [Human], indices: (usize, usize), relationship: RelationshipType) {
-        let (relationship_1, relationship_2) = match relationship {
-            RelationshipType::Parent => {(
-                Relationship::new(RelationshipType::Parent, indices.1),
-                Relationship::new(RelationshipType::Child, indices.0)
-            )},
-            RelationshipType::Child => {(
-                Relationship::new(RelationshipType::Child, indices.1),
-                Relationship::new(RelationshipType::Parent, indices.0)
-            )},
-            RelationshipType::Spouse => {(
-                Relationship::new(RelationshipType::Spouse, indices.1),
-                Relationship::new(RelationshipType::Spouse, indices.0)
-            )},
-            RelationshipType::Sibling => {(
-                Relationship::new(RelationshipType::Sibling, indices.1),
-                Relationship::new(RelationshipType::Sibling, indices.0)
-            )}
+    fn create_relationship(&mut self, indices: (usize, usize), relationship_1: RelationshipType) {
+        let relationship_2 = match relationship_1 {
+            RelationshipType::Parent => {RelationshipType::Child},
+            RelationshipType::Child => {RelationshipType::Parent},
+            RelationshipType::Spouse => {RelationshipType::Spouse},
+            RelationshipType::Sibling => {RelationshipType::Sibling}
         };
-            
-        population[indices.0].add_relationship(relationship_1);
-        population[indices.1].add_relationship(relationship_2);
+
+        self.alive_pop.get_mut(&indices.0).unwrap().add_relationship(Relationship::new(relationship_1, indices.1));
+        self.alive_pop.get_mut(&indices.1).unwrap().add_relationship(Relationship::new(relationship_2, indices.0));
     }
 
     // TODO: Review (including dead/alive)
     #[allow(dead_code)]
-    pub fn print_relationships(&self, person_id: usize) {
-        for relationship in self.alive_pop[person_id].get_relationships() {
-            println!("{} is {}'s {}",
-                self.alive_pop[relationship.get_person_id()].get_name(),
-                self.alive_pop[person_id].get_name(),
+    pub fn print_relationships(&self, person: &Human) {
+        for relationship in person.get_relationships() {
+            let mut relative = self.alive_pop.get(&relationship.get_person_id());
+            if relative.is_none() { relative = self.dead_pop.get(&relationship.get_person_id()) }
+            if relative.is_none() { return }
+
+            println!(
+                "{} is {}'s {}",
+                person.get_name(),
+                relative.unwrap().get_name(),
                 relationship.get_relationship_type()
             );
         }
+    }
 
-        for relationship in self.dead_pop[person_id].get_relationships() {
-            println!("{} was {}'s {}",
-                self.alive_pop[relationship.get_person_id()].get_name(),
-                self.alive_pop[person_id].get_name(),
-                relationship.get_relationship_type()
-            );
+    #[allow(dead_code)]
+    pub fn print_population(&self) {
+        println!("[--------- Alive ------------]");
+        for person in self.alive_pop.iter() {
+            println!("{}", person.1);
+        }
+
+        println!("[--------- Dead  ------------]");
+        for person in self.dead_pop.iter() {
+            println!("{}", person.1);
         }
     }
 }

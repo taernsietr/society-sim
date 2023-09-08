@@ -6,8 +6,9 @@ pub const MAX_AGE: usize = 110 * 365;
 pub const LEGAL_AGE: usize = 18 * 365;
 pub const MAX_FAMILY_SIZE: usize = 8;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub enum Gender {
+    #[default]
     CisMale,
     CisFemale,
     TransMale,
@@ -15,8 +16,9 @@ pub enum Gender {
     NonBinary,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub enum Sexuality {
+    #[default]
     Heterosexual,
     Homosexual,
     Pansexual,
@@ -33,10 +35,10 @@ pub enum RelationshipType {
 impl Distribution<Gender> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Gender {
         match rng.gen_range(1..100) {
-            01..=030 => Gender::CisMale,
-            31..=060 => Gender::CisFemale,
-            61..=075 => Gender::TransMale,
-            76..=090 => Gender::TransFemale,
+            1..=30 => Gender::CisMale,
+            31..=60 => Gender::CisFemale,
+            61..=75 => Gender::TransMale,
+            76..=90 => Gender::TransFemale,
             91..=100 => Gender::NonBinary,
             _ => unreachable!()
         }
@@ -46,8 +48,8 @@ impl Distribution<Gender> for Standard {
 impl Distribution<Sexuality> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Sexuality {
         match rng.gen_range(1..100) {
-            01..=050 => Sexuality::Heterosexual,
-            51..=070 => Sexuality::Homosexual,
+            1..=50 => Sexuality::Heterosexual,
+            51..=70 => Sexuality::Homosexual,
             71..=100 => Sexuality::Pansexual,
             _ => unreachable!()
         }

@@ -2,10 +2,10 @@ use std::fmt;
 use rand::Rng;
 
 use crate::helpers::request_word;
-use crate::attributes::{MAX_INITIAL_AGE, MAX_AGE, Sexuality, Gender};
+use crate::attributes::{MAX_INITIAL_AGE, MAX_AGE, Sexuality, Gender, RelationshipType};
 use crate::relationship::Relationship;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Human {
     id: usize,
     name: String,
@@ -53,6 +53,7 @@ impl fmt::Display for Human {
 impl Human {
     pub fn get_id(&self) -> usize { self.id }
     pub fn get_name(&self) -> String { self.name.clone() }
+    pub fn get_full_name(&self) -> String { format!("{} {}", self.name, self.family) }
     pub fn get_gender(&self) -> Gender { self.gender }
     pub fn get_sexuality(&self) -> Sexuality { self.sexuality }
     pub fn get_age(&self) -> usize { self.age }
@@ -60,6 +61,14 @@ impl Human {
     pub fn get_relationships(&self) -> &[Relationship] { &self.relationships }
 
     pub fn add_relationship(&mut self, relationship: Relationship) { self.relationships.push(relationship); }
+
+    pub fn has_spouse(&self) -> bool {
+        self.relationships
+            .iter()
+            .filter(|each| matches!(each.get_relationship_type(), RelationshipType::Spouse))
+            .collect::<Vec<_>>()
+            .len() > 0
+    }
 
     // TODO: Refactor this to something that doesn't look like a monkey wrote
     pub fn get_valid_spouses(gender: Gender, sexuality: Sexuality) -> &'static [(Gender, Sexuality)] {
@@ -156,7 +165,7 @@ impl Human {
 
         if roll <= death_threshold {
             self.alive = false;
-            println!("{}, {}, {}, has died. [{:.2} | {:.2}]", self.family, self.name, self.get_formatted_age().0, roll, death_threshold);
+            // println!("{}, {}, {}, has died. [{:.2} | {:.2}]", self.family, self.name, self.get_formatted_age().0, roll, death_threshold);
         }
     }
 
