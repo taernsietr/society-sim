@@ -20,6 +20,7 @@ impl Population {
         while self.alive_pop.contains_key(&key) || self.dead_pop.contains_key(&key) {
             key = rand::random();
         }
+
         key
     }
 
@@ -31,7 +32,6 @@ impl Population {
         while remaining_pop > 0 {
             let family_size = if remaining_pop > 1 { rng.gen_range(1..=Ord::min(MAX_FAMILY_SIZE, remaining_pop)) } else { 1 };
             remaining_pop -= family_size;
-            dbg!(family_size, remaining_pop, population.alive_pop.len());
             population.new_family(family_size)
         }
 
@@ -61,7 +61,7 @@ impl Population {
                     let spouse = Human::get_valid_spouses(family_root.get_gender(), family_root.get_sexuality()).choose(&mut rng).unwrap();
                     let valid_spouse_ages = family_root.get_valid_spouse_ages().unwrap();
                     (
-                        Some(rng.gen_range(Ord::max(valid_spouse_ages.0 * 365, LEGAL_AGE)..(valid_spouse_ages.1 * 365))), Some(spouse.0), Some(spouse.1)
+                        Some(rng.gen_range(Ord::max(valid_spouse_ages.0, LEGAL_AGE)..valid_spouse_ages.1)), Some(spouse.0), Some(spouse.1)
                     )
                 },
                 RelationshipType::Sibling => {
@@ -90,9 +90,14 @@ impl Population {
         }
     }
 
-    pub fn run_ticks(&mut self) {
+    pub fn tick(&mut self) {
         self.elapsed_time += 1;
+        self.alive_pop.iter_mut().for_each(|person| person.1.tick());
+        self.dead_cleanup();
+        self.meetups();
+    }
 
+    fn dead_cleanup(&mut self) {
         let dead_ids: Vec<usize> = self.alive_pop
             .iter()
             .filter(|person| !person.1.get_alive())
@@ -103,42 +108,47 @@ impl Population {
             let dead = self.alive_pop.remove_entry(id).unwrap();
             self.dead_pop.insert(dead.0, dead.1);
         }
-
-        self.alive_pop.iter_mut().for_each(|person| person.1.tick());
-
-        if self.elapsed_time % MEETUP_PERIOD == 0 {
-            self.run_meetups();
-        }
     }
 
-    fn run_meetups(&mut self) {
+    fn meetups(&mut self) {
+        if !(self.alive_pop.len() > 1 && self.elapsed_time % MEETUP_PERIOD == 0) { return }
         let mut rng = rand::thread_rng();
 
-        let people = self.alive_pop
-            .keys()
+        let people: Vec<&Human> = self.alive_pop
+            .iter()
             .choose_multiple(&mut rng, 2)
-            .clone();
+            .iter()
+            .map(|person| person.1)
+            .collect();
+        let person_1 = people[0];
+        let person_2 = people[1];
+        let person_2_ages = person_2.get_valid_spouse_ages();
+        if person_2_ages.is_none() { return }
+        let person_2_ages = person_2_ages.unwrap();
 
-        if people.len() <= 1 { return }
-
-        let person_1 = self.alive_pop.get(people[0]).unwrap();
-        let person_2 = self.alive_pop.get(people[1]).unwrap();
-
-        person_1.get_valid_spouse_ages().is_some()
-        person_2.get_valid_spouse_ages().is_some() { 
-
+        // TODO: Review; how to simplify this bunch of conditions?
         if person_1.get_family() != person_2.get_family() &&
-            !person_1.has_spouse() &&
-            !person_2.has_spouse()
-            {
-                let couple_threshold: usize = 3;
-                let roll = rng.gen_range(0..=100);
+        person_1.get_valid_spouse_ages().is_some() &&
+        person_2.get_valid_spouse_ages().is_some() &&
+        person_1.get_age() >= person_2_ages.0 &&
+        person_1.get_age() <= person_2_ages.1 &&
+        !person_1.has_spouse() && 
+        !person_2.has_spouse() {
+            let couple_threshold: usize = 3;
+            let roll = rng.gen_range(0..=100);
 
-                if roll <= couple_threshold {
-                    println!("[COUPLE]: Couple formed: ({}, {})", person_1.get_full_name(), person_2.get_full_name());
-                    self.create_relationship((person_1.get_id(), person_2.get_id()), RelationshipType::Spouse);
-                }
+            if roll <= couple_threshold {
+                println!(
+                    "[MARRIAGE]: Couple formed: {}, {} and {}, {}. [{} | {}]",
+                    person_1.get_full_name(),
+                    person_1.get_age_years(),
+                    person_2.get_full_name(),
+                    person_2.get_age_years(),
+                    roll,
+                    couple_threshold);
+                self.create_relationship((person_1.get_id(), person_2.get_id()), RelationshipType::Spouse);
             }
+        }
     }
 
     pub fn get_size(&self) -> usize {
@@ -146,7 +156,7 @@ impl Population {
     }
 
     pub fn get_survival_rate(&self) -> usize {
-        self.dead_pop.len() * 100 / self.get_size()
+        self.alive_pop.len() * 100 / self.get_size()
     }
 
     fn create_relationship(&mut self, indices: (usize, usize), relationship_1: RelationshipType) {
@@ -180,12 +190,12 @@ impl Population {
 
     #[allow(dead_code)]
     pub fn print_population(&self) {
-        println!("[--------- Alive ------------]");
+        println!("\n[--------- Alive ------------]");
         for person in self.alive_pop.iter() {
             println!("{}", person.1);
         }
 
-        println!("[--------- Dead  ------------]");
+        println!("\n[--------- Dead  ------------]");
         for person in self.dead_pop.iter() {
             println!("{}", person.1);
         }

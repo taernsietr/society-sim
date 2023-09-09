@@ -2,7 +2,7 @@ use std::fmt;
 use rand::Rng;
 
 use crate::helpers::request_word;
-use crate::attributes::{MAX_INITIAL_AGE, MAX_AGE, Sexuality, Gender, RelationshipType};
+use crate::attributes::{MAX_INITIAL_AGE, MAX_AGE, Sexuality, Gender, RelationshipType, LEGAL_AGE};
 use crate::relationship::Relationship;
 
 #[derive(Clone, Default, Debug)]
@@ -58,6 +58,7 @@ impl Human {
     pub fn get_gender(&self) -> Gender { self.gender }
     pub fn get_sexuality(&self) -> Sexuality { self.sexuality }
     pub fn get_age(&self) -> usize { self.age }
+    pub fn get_age_years(&self) -> usize { self.age / 365 }
     pub fn get_alive(&self) -> bool { self.alive }
     pub fn get_relationships(&self) -> &[Relationship] { &self.relationships }
 
@@ -141,8 +142,12 @@ impl Human {
     }
 
     pub fn get_valid_spouse_ages(&self) -> Option<(usize, usize)> {
-        let ages = ((self.age / 2 + 7), (self.age - 7) * 2);
-        if ages.0 < 18 { None } else { Some(ages) }
+        match self.age / 365 {
+            0..=17 => { None },
+            18..=22 => { Some((LEGAL_AGE, (self.age - (7 * 365)) * 2)) },
+            23.. => { Some((self.age / 2 + (7 * 365), (self.age - (7 * 365)) * 2)) },
+            _ => unreachable!()
+        }
     }
 
     fn get_formatted_age(&self) -> (usize, usize, usize) {
@@ -166,7 +171,7 @@ impl Human {
     fn check_death(&mut self) {
         let mut rng = rand::thread_rng(); 
 
-        let death_threshold = self.age * 100 / MAX_AGE;
+        let death_threshold = 1 + self.age * 5 / MAX_AGE;
         let roll = rng.gen_range(0..=100);
 
         if roll <= death_threshold {
