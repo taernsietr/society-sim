@@ -140,6 +140,11 @@ impl Human {
         }
     }
 
+    pub fn get_valid_spouse_ages(&self) -> Option<(usize, usize)> {
+        let ages = ((self.age / 2 + 7), (self.age - 7) * 2);
+        if ages.0 < 18 { None } else { Some(ages) }
+    }
+
     fn get_formatted_age(&self) -> (usize, usize, usize) {
         let mut days = self.age;
         let years: usize = days / 365;

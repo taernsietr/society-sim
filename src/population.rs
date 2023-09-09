@@ -26,7 +26,7 @@ impl Population {
     pub fn new(pop_size: usize) -> Population {
         let mut rng = rand::thread_rng();
         let mut population = Population::default();
-        let mut remaining_pop = pop_size.clone();
+        let mut remaining_pop = pop_size;
 
         while remaining_pop > 0 {
             let family_size = if remaining_pop > 1 { rng.gen_range(1..=Ord::min(MAX_FAMILY_SIZE, remaining_pop)) } else { 1 };
@@ -59,8 +59,9 @@ impl Population {
                 },
                 RelationshipType::Spouse => {
                     let spouse = Human::get_valid_spouses(family_root.get_gender(), family_root.get_sexuality()).choose(&mut rng).unwrap();
+                    let valid_spouse_ages = family_root.get_valid_spouse_ages().unwrap();
                     (
-                        Some(rng.gen_range(Ord::max(family_root.get_age() / 2 + 7 * 365, LEGAL_AGE)..((family_root.get_age() - 7 * 365) * 2))), Some(spouse.0), Some(spouse.1)
+                        Some(rng.gen_range(Ord::max(valid_spouse_ages.0 * 365, LEGAL_AGE)..(valid_spouse_ages.1 * 365))), Some(spouse.0), Some(spouse.1)
                     )
                 },
                 RelationshipType::Sibling => {
@@ -123,9 +124,13 @@ impl Population {
         let person_1 = self.alive_pop.get(people[0]).unwrap();
         let person_2 = self.alive_pop.get(people[1]).unwrap();
 
+        person_1.get_valid_spouse_ages().is_some()
+        person_2.get_valid_spouse_ages().is_some() { 
+
         if person_1.get_family() != person_2.get_family() &&
             !person_1.has_spouse() &&
-            !person_2.has_spouse() {
+            !person_2.has_spouse()
+            {
                 let couple_threshold: usize = 3;
                 let roll = rng.gen_range(0..=100);
 
