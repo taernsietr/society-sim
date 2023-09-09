@@ -166,7 +166,7 @@ impl Human {
 
         if roll <= death_threshold {
             self.alive = false;
-            println!("{}, {}, {}, has died. [{:.2} | {:.2}]", self.family, self.name, self.get_formatted_age().0, roll, death_threshold);
+            println!("[DEATH]: {}, {}, {}, has died. [{:.2} | {:.2}]", self.family, self.name, self.get_formatted_age().0, roll, death_threshold);
         }
     }
 

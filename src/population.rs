@@ -26,15 +26,15 @@ impl Population {
     pub fn new(pop_size: usize) -> Population {
         let mut rng = rand::thread_rng();
         let mut population = Population::default();
-        let mut remaining_pop = pop_size;
+        let mut remaining_pop = pop_size.clone();
 
         while remaining_pop > 0 {
             let family_size = if remaining_pop > 1 { rng.gen_range(1..=Ord::min(MAX_FAMILY_SIZE, remaining_pop)) } else { 1 };
             remaining_pop -= family_size;
+            dbg!(family_size, remaining_pop, population.alive_pop.len());
             population.new_family(family_size)
         }
 
-        dbg!(population.alive_pop.len());
         population
     }
 
@@ -47,7 +47,7 @@ impl Population {
         let family_root = Human::new(family_root_id, None, Some(family_name.clone()), None, None, Some(rng.gen_range(LEGAL_AGE..=(MAX_AGE-LEGAL_AGE))), None, None);
         self.alive_pop.insert(family_root_id, family_root.clone());
 
-        for _ in 0..family_size {
+        for _ in 0..family_size-1 {
             let relation: RelationshipType = rand::random();
 
             let (age, spouse_gender, spouse_sexuality): (Option<usize>, Option<Gender>, Option<Sexuality>) = match relation {
@@ -118,6 +118,8 @@ impl Population {
             .choose_multiple(&mut rng, 2)
             .clone();
 
+        if people.len() <= 1 { return }
+
         let person_1 = self.alive_pop.get(people[0]).unwrap();
         let person_2 = self.alive_pop.get(people[1]).unwrap();
 
@@ -128,7 +130,7 @@ impl Population {
                 let roll = rng.gen_range(0..=100);
 
                 if roll <= couple_threshold {
-                    println!("Couple formed: ({}, {})", person_1.get_full_name(), person_2.get_full_name());
+                    println!("[COUPLE]: Couple formed: ({}, {})", person_1.get_full_name(), person_2.get_full_name());
                     self.create_relationship((person_1.get_id(), person_2.get_id()), RelationshipType::Spouse);
                 }
             }
