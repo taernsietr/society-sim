@@ -49,7 +49,6 @@ impl fmt::Display for Human {
     }
 }
 
-#[allow(dead_code)]
 impl Human {
     pub fn get_id(&self) -> usize { self.id }
     pub fn get_name(&self) -> String { self.name.clone() }
@@ -64,12 +63,14 @@ impl Human {
 
     pub fn add_relationship(&mut self, relationship: Relationship) { self.relationships.push(relationship); }
 
-    pub fn has_spouse(&self) -> bool {
-        !self.relationships
+    pub fn get_spouse(&self) -> Option<usize> {
+        let lookup: Vec<usize> = self.relationships
             .iter()
-            .filter(|each| matches!(each.get_relationship_type(), RelationshipType::Spouse))
-            .collect::<Vec<_>>()
-            .is_empty() 
+            .filter(|relationship| matches!(relationship.get_relationship_type(), RelationshipType::Spouse))
+            .map(|relationship| relationship.get_person_id())
+            .collect();
+        if lookup.is_empty() { None }
+        else { Some(lookup[0]) }
     }
 
     // TODO: Refactor this to something that doesn't look like a monkey wrote
