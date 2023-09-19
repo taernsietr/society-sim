@@ -1,4 +1,4 @@
-use crate::attributes::RelationshipType;
+use crate::generation::attributes::RelationshipType;
 
 #[derive(Clone, Debug)]
 pub struct Relationship {

@@ -1,11 +1,6 @@
-mod helpers;
-mod attributes;
-mod constants;
-mod human;
-mod population;
-mod relationship;
+mod generation;
 
-use population::Population;
+use generation::population::Population;
 
 fn main() {
     let running_time = 365 * 10;

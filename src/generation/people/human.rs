@@ -1,10 +1,12 @@
 use std::fmt;
 use rand::Rng;
 
-use crate::helpers::request_word;
-use crate::relationship::Relationship;
-use crate::attributes::{Sexuality, Gender, RelationshipType};
-use crate::constants::*;
+use crate::generation::{
+    helpers::request_word,
+    relationship::Relationship,
+    attributes::{Sexuality, Gender, RelationshipType},
+    constants::*
+};
 
 #[derive(Clone, Default, Debug)]
 pub struct Human {
