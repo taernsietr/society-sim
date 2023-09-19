@@ -1,10 +1,9 @@
-use std::fmt;
 use rand::Rng;
 
 use crate::generation::{
     helpers::request_word,
     relationship::Relationship,
-    attributes::{Sexuality, Gender, RelationshipType},
+    people::attributes::{Sexuality, Gender, RelationshipType},
     constants::*
 };
 
@@ -21,37 +20,6 @@ pub struct Human {
     alive: bool,
 }
 
-impl fmt::Display for Human {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let (years, months, days) = self.get_formatted_age();
-        
-        let age: String = match (years, months, days) {
-            (0, 0, 1) => "1 day old".to_string(),
-            (0, 0, 1..) => format!("{} days old", days),
-            (0, 1, _) => "1 month old".to_string(),
-            (1, 0, _) => "1 year old".to_string(),
-            (1.., 0, _) => format!("{} years old", years),
-            (0, 1.., _) => format!("{} months old", months),
-            (1, 1.., _) => format!("1 year, {} months old", months),
-            (1.., 1, _) => format!("{} years, 1 month old", years),
-            (1.., 1.., _) => format!("{} years, {} months old", years, months),
-            (_, _, _) => unreachable!()
-        };
-        
-        write!(
-            f,
-            "{}, {} - {}, {}, {} {} [{}]",
-            self.family, self.name,
-            match self.alive {
-                true => "alive".to_string(),
-                false => "dead".to_string(),
-            },
-            age,
-            self.sexuality, self.gender, self.phenotype
-        )
-    }
-}
-
 impl Human {
     pub fn get_id(&self) -> usize { self.id }
     pub fn get_name(&self) -> String { self.name.clone() }
@@ -63,6 +31,7 @@ impl Human {
     pub fn get_age_years(&self) -> usize { self.age / 365 }
     pub fn get_alive(&self) -> bool { self.alive }
     pub fn get_relationships(&self) -> &[Relationship] { &self.relationships }
+    pub fn get_phenotype(&self) -> usize { self.phenotype }
 
     pub fn add_relationship(&mut self, relationship: Relationship) { self.relationships.push(relationship); }
 
@@ -76,85 +45,7 @@ impl Human {
         else { Some(lookup[0]) }
     }
 
-    // TODO: Refactor this to something that doesn't look like a monkey wrote
-    pub fn get_valid_spouses(gender: Gender, sexuality: Sexuality) -> &'static [(Gender, Sexuality)] {
-        match (gender, sexuality) {
-            (Gender::CisMale, Sexuality::Heterosexual) => &[
-                (Gender::CisFemale, Sexuality::Heterosexual),
-                (Gender::TransFemale, Sexuality::Heterosexual),
-                (Gender::CisFemale, Sexuality::Pansexual),
-                (Gender::TransFemale, Sexuality::Pansexual)
-            ],
-            (Gender::CisMale, Sexuality::Homosexual) => &[
-                (Gender::CisMale, Sexuality::Homosexual),
-                (Gender::TransMale, Sexuality::Homosexual),
-                (Gender::CisMale, Sexuality::Pansexual),
-                (Gender::TransMale, Sexuality::Pansexual)
-            ],
-            (Gender::CisFemale, Sexuality::Heterosexual) => &[
-                (Gender::CisMale, Sexuality::Heterosexual),
-                (Gender::TransMale, Sexuality::Heterosexual),
-                (Gender::CisMale, Sexuality::Pansexual),
-                (Gender::TransMale, Sexuality::Pansexual)
-            ],
-            (Gender::CisFemale, Sexuality::Homosexual) => &[
-                (Gender::CisFemale, Sexuality::Homosexual),
-                (Gender::TransFemale, Sexuality::Homosexual),
-                (Gender::CisFemale, Sexuality::Pansexual),
-                (Gender::TransFemale, Sexuality::Pansexual)
-            ],
-            (Gender::TransMale, Sexuality::Heterosexual) => &[
-                (Gender::CisFemale, Sexuality::Heterosexual),
-                (Gender::TransFemale, Sexuality::Heterosexual),
-                (Gender::CisFemale, Sexuality::Pansexual),
-                (Gender::TransFemale, Sexuality::Pansexual)
-            ],
-            (Gender::TransMale, Sexuality::Homosexual) => &[
-                (Gender::CisMale, Sexuality::Homosexual),
-                (Gender::TransMale, Sexuality::Homosexual),
-                (Gender::CisMale, Sexuality::Pansexual),
-                (Gender::TransMale, Sexuality::Pansexual)
-            ],
-            (Gender::TransFemale, Sexuality::Heterosexual) => &[
-                (Gender::CisMale, Sexuality::Heterosexual),
-                (Gender::TransMale, Sexuality::Heterosexual),
-                (Gender::CisMale, Sexuality::Pansexual),
-                (Gender::TransMale, Sexuality::Pansexual)
-            ],
-            (Gender::TransFemale, Sexuality::Homosexual) => &[
-                (Gender::CisFemale, Sexuality::Homosexual),
-                (Gender::TransFemale, Sexuality::Homosexual),
-                (Gender::CisFemale, Sexuality::Pansexual),
-                (Gender::TransFemale, Sexuality::Pansexual)
-            ],
-            (_, Sexuality::Pansexual) => &[
-                (Gender::CisMale, Sexuality::Heterosexual),
-                (Gender::CisMale, Sexuality::Homosexual),
-                (Gender::CisFemale, Sexuality::Heterosexual),
-                (Gender::CisFemale, Sexuality::Homosexual),
-                (Gender::TransMale, Sexuality::Heterosexual),
-                (Gender::TransMale, Sexuality::Homosexual),
-                (Gender::TransFemale, Sexuality::Heterosexual),
-                (Gender::TransFemale, Sexuality::Homosexual),
-                (Gender::CisMale, Sexuality::Pansexual),
-                (Gender::CisFemale, Sexuality::Pansexual),
-                (Gender::TransMale, Sexuality::Pansexual),
-                (Gender::TransFemale, Sexuality::Pansexual),
-            ],
-            (_, _) => unreachable!()
-        }
-    }
-
-    pub fn get_valid_spouse_ages(&self) -> Option<(usize, usize)> {
-        match self.age / 365 {
-            0..=17 => { None },
-            18..=22 => { Some((LEGAL_AGE, (self.age - (7 * 365)) * 2)) },
-            23.. => { Some((self.age / 2 + (7 * 365), (self.age - (7 * 365)) * 2)) },
-            _ => unreachable!()
-        }
-    }
-
-    fn get_formatted_age(&self) -> (usize, usize, usize) {
+    pub fn get_formatted_age(&self) -> (usize, usize, usize) {
         let mut days = self.age;
         let years: usize = days / 365;
         days -= years * 365; 
