@@ -2,8 +2,9 @@ use std::fmt;
 use rand::Rng;
 
 use crate::helpers::request_word;
-use crate::attributes::{MAX_INITIAL_AGE, MAX_AGE, Sexuality, Gender, RelationshipType, LEGAL_AGE};
 use crate::relationship::Relationship;
+use crate::attributes::{Sexuality, Gender, RelationshipType};
+use crate::constants::*;
 
 #[derive(Clone, Default, Debug)]
 pub struct Human {

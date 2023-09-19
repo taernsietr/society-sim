@@ -3,9 +3,10 @@ use rand::Rng;
 use rand::seq::{SliceRandom, IteratorRandom};
 
 use crate::helpers::request_word;
-use crate::attributes::{MAX_AGE, LEGAL_AGE, MAX_FAMILY_SIZE, MEETUP_PERIOD, CHILDBIRTH_PERIOD, Gender, Sexuality, RelationshipType, FERTILE_AGE};
 use crate::human::Human;
 use crate::relationship::Relationship;
+use crate::attributes::{Gender, Sexuality, RelationshipType};
+use crate::constants::*;
 
 #[derive(Default)]
 pub struct Population {
@@ -115,7 +116,7 @@ impl Population {
         self.alive_pop.iter_mut().for_each(|person| person.1.tick());
         self.dead_cleanup();
         self.meetups();
-        self.children();
+    //    self.children();
     }
 
     fn dead_cleanup(&mut self) {
