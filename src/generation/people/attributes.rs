@@ -88,7 +88,6 @@ impl fmt::Display for RelationshipType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             RelationshipType::Parent => write!(f, "parent"),
-            RelationshipType::Child => write!(f, "child"),
             RelationshipType::Sibling => write!(f, "sibling"),
             RelationshipType::Spouse => write!(f, "spouse")
         }

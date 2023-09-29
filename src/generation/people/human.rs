@@ -1,9 +1,7 @@
 use rand::Rng;
 
 use crate::generation::{
-    helpers::request_word,
-    relationship::Relationship,
-    people::attributes::{Sexuality, Gender, RelationshipType},
+    people::attributes::{Sexuality, Gender},
     constants::*
 };
 
@@ -16,7 +14,6 @@ pub struct Human {
     sexuality: Sexuality,
     age: usize,
     phenotype: usize,
-    relationships: Vec<Relationship>,
     alive: bool,
 }
 
@@ -30,20 +27,7 @@ impl Human {
     pub fn get_age(&self) -> usize { self.age }
     pub fn get_age_years(&self) -> usize { self.age / 365 }
     pub fn get_alive(&self) -> bool { self.alive }
-    pub fn get_relationships(&self) -> &[Relationship] { &self.relationships }
     pub fn get_phenotype(&self) -> usize { self.phenotype }
-
-    pub fn add_relationship(&mut self, relationship: Relationship) { self.relationships.push(relationship); }
-
-    pub fn get_spouse(&self) -> Option<usize> {
-        let lookup: Vec<usize> = self.relationships
-            .iter()
-            .filter(|relationship| matches!(relationship.get_relationship_type(), RelationshipType::Spouse))
-            .map(|relationship| relationship.get_person_id())
-            .collect();
-        if lookup.is_empty() { None }
-        else { Some(lookup[0]) }
-    }
 
     pub fn get_formatted_age(&self) -> (usize, usize, usize) {
         let mut days = self.age;
@@ -78,25 +62,21 @@ impl Human {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: usize,
-        name: Option<String>,
-        family: Option<String>,
-        gender: Option<Gender>,
-        sexuality: Option<Sexuality>,
-        age: Option<usize>,
-        phenotype: Option<usize>,
-        relationships: Option<Vec<Relationship>>,
+        name: String,
+        family: String,
+        gender: Gender,
+        sexuality: Sexuality,
+        age: usize,
+        phenotype: usize,
     ) -> Human {
-        let mut rng = rand::thread_rng();
-
         Human {
             id,
-            name: name.unwrap_or_else(request_word),
-            family: family.unwrap_or_else(request_word),
-            gender: gender.unwrap_or_else(rand::random),
-            sexuality: sexuality.unwrap_or_else(rand::random),
-            age: age.unwrap_or_else(|| rng.gen_range(0..=MAX_INITIAL_AGE)),
-            phenotype: phenotype.unwrap_or_else(|| rng.gen_range(0..=65535)),
-            relationships: relationships.unwrap_or_default(),
+            name,
+            family,
+            gender,
+            sexuality,
+            age,
+            phenotype,
             alive: true,
         }
     }
