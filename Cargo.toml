@@ -7,5 +7,6 @@ edition = "2021"
 
 [dependencies]
 rand = "0.8.5"
-angelspeech = { path = "/home/tsrodr/Run/angelspeech" }
+# angelspeech = { path = "/home/tsrodr/Run/angelspeech" }
+angelspeech = { path = "/data/data/com.termux/files/home/Run/angelspeech" }
 

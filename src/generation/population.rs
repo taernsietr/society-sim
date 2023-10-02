@@ -10,6 +10,7 @@ use crate::generation::{
 pub struct Population {
     generators: Vec<TextGenerator>,
     elapsed_time: usize,
+    current_id: usize,
     people: HashMap<usize, Human>,
     relationships: Vec<Relationship>
 }

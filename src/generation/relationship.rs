@@ -11,7 +11,11 @@ pub struct Relationship {
 }
 
 impl Relationship {
-    pub fn new(relationship_type: RelationshipType, person_1: usize, person_2: usize) -> Relationship { Relationship { relationship_type, person_1, person_2 } }
+    pub fn new(
+        relationship_type: RelationshipType,
+        person_1: usize,
+        person_2: usize
+    ) -> Relationship { Relationship { relationship_type, person_1, person_2 } }
 
     pub fn contains_id(&self, person_id: usize) -> bool { self.person_1 == person_id || self.person_2 == person_id }
     pub fn get_relationship_type(&self) -> RelationshipType { self.relationship_type }
