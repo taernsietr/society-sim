@@ -89,6 +89,7 @@ impl fmt::Display for RelationshipType {
         match self {
             RelationshipType::Parent => write!(f, "parent"),
             RelationshipType::Sibling => write!(f, "sibling"),
+            RelationshipType::Child => write!(f, "child"),
             RelationshipType::Spouse => write!(f, "spouse")
         }
     }

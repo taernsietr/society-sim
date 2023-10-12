@@ -29,18 +29,6 @@ impl Population {
         population
     }
 
-    // this just attempts to generated a key that's not used before. better solution?
-    fn new_random_id(&self) -> usize {
-        let mut key: usize = rand::random();
-        while self.get_pop().contains_key(&key) {
-            key = rand::random();
-        }
-
-        key
-    } 
-
-    fn next_id(&mut self) -> usize { self.last_id += 1 } // does this return the expression result?
-
     pub fn new_family(&mut self, family_size: usize, generators: &[TextGenerator]) {
         let mut rng = rand::thread_rng();
         let language = &generators.choose(&mut rng).unwrap();
@@ -62,6 +50,8 @@ impl Population {
 
         for _ in 0..family_size-1 {
             let relation: RelationshipType = rand::random();
+
+            let lowest_parent_age = self.lowest_parent_age(family_root_id);
 
             let (age, relative_gender, relative_sexuality): (Option<usize>, Option<Gender>, Option<Sexuality>) = match relation {
                 RelationshipType::Child => {(
@@ -127,6 +117,22 @@ impl Population {
             self.create_relationship(Relationship::new(relation, family_root_id, relative_id));
         }
     }
+
+    fn lowest_parent_age(&self, id: usize) -> Option<usize> {
+        self.get_relationships()
+            .iter()
+            .filter(
+                |relationship|
+                relationship.get_person_id(1) == id &&
+                matches!(relationship.get_relationship_type(), RelationshipType::Parent)
+            )
+            .map(|relationship| self.get_pop().get(&relationship.get_person_id(0)).unwrap().get_age())
+            .collect::<Vec<usize>>()
+            .iter()
+            .min()
+            .clone()
+    }
+
 
     fn request_word(&self) -> String {
         let mut rng = rand::thread_rng();

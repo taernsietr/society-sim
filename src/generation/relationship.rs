@@ -29,7 +29,7 @@ impl Relationship {
 }
 
 impl Population {
-    pub fn create_relationship(&mut self, relationship: Relationship) { self.get_relationships().push(relationship); }
+    pub fn create_relationship(&mut self, relationship: Relationship) { self.get_relationships_mut().push(relationship); }
 
     pub fn has_spouses(&self, person: usize) -> bool {
         self.get_relationships()
@@ -41,18 +41,5 @@ impl Population {
             )
             .count() > 0
     }
-
-//    #[allow(dead_code)]
-//    pub fn print_relationships(&self, person: &Human) {
-//        for relationship in person.get_relationships() {
-//
-//            println!(
-//                "{} is {}'s {}",
-//                person.get_name(),
-//                relative.unwrap().get_name(),
-//                relationship.get_relationship_type()
-//            );
-//        }
-//    }
 }
 
