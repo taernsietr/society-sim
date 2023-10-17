@@ -77,7 +77,7 @@ impl Human {
     }
 
     pub fn get_valid_spouse_ages(&self) -> Option<(usize, usize)> {
-        let age = self.get_age();
+        let age = self.age;
         match age / 365 {
             0..=17 => { None },
             18..=22 => { Some((LEGAL_AGE, (age - (7 * 365)) * 2)) },

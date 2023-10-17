@@ -19,6 +19,7 @@ pub struct HumanBuilder {
     alive: Option<bool>
 }
 
+#[allow(dead_code)]
 impl HumanBuilder {
     pub fn new() -> HumanBuilder {
         HumanBuilder::default()
@@ -110,16 +111,17 @@ impl HumanBuilder {
 
 #[derive(Clone, Default, Debug)]
 pub struct Human {
-    id: usize,
-    name: String,
-    family: String,
-    gender: Gender,
-    sexuality: Sexuality,
-    age: usize,
-    phenotype: usize,
-    alive: bool,
+    pub id: usize,
+    pub name: String,
+    pub family: String,
+    pub gender: Gender,
+    pub sexuality: Sexuality,
+    pub age: usize,
+    pub phenotype: usize,
+    pub alive: bool,
 }
 
+#[allow(dead_code)]
 impl Human {
     pub fn get_id(&self) -> usize { self.id }
     pub fn get_name(&self) -> &str { self.name.as_ref() }
@@ -159,9 +161,15 @@ impl Human {
 
         if roll <= death_threshold {
             self.alive = false;
-            println!("[DEATH]: {}, {}, {}, has died. [{:.2} | {:.2}]", self.family, self.name, self.get_formatted_age().0, roll, death_threshold);
+            println!(
+                "[DEATH]: {}, {}, {}, has died. [{:.2} | {:.2}]",
+                self.family,
+                self.name,
+                self.get_formatted_age().0,
+                roll,
+                death_threshold
+            );
         }
     }
-
 }
 

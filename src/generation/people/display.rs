@@ -22,13 +22,13 @@ impl fmt::Display for Human {
         write!(
             f,
             "{}, {} - {}, {}, {} {} [{}]",
-            self.get_family(), self.get_name(),
-            match self.get_alive() {
+            self.family, self.name,
+            match self.alive {
                 true => "alive".to_string(),
                 false => "dead".to_string(),
             },
             age,
-            self.get_sexuality(), self.get_gender(), self.get_phenotype()
+            self.sexuality, self.gender, self.phenotype
         )
     }
 }

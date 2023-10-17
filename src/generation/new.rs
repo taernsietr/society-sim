@@ -23,7 +23,7 @@ impl Population {
             } else { 1 };
 
             remaining_pop -= family_size;
-            population.new_family(family_size, &generators)
+            population.new_family(family_size, generators)
         }
         population
     }
@@ -52,13 +52,13 @@ impl Population {
             let mut relative = HumanBuilder::new();
 
             match relation {
-                RelationshipType::Child => { relative.random_child_age(family_root.get_age()) },
-                RelationshipType::Parent => { relative.random_parent_age(family_root.get_age()) },
+                RelationshipType::Child => { relative.random_child_age(family_root.age) },
+                RelationshipType::Parent => { relative.random_parent_age(family_root.age) },
                 RelationshipType::Spouse => {
                     let spouse_ages = family_root.get_valid_spouse_ages().unwrap();
                     let (spouse_gender, spouse_sexuality) = Human::get_valid_spouses(
-                        family_root.get_gender(),
-                        family_root.get_sexuality()
+                        family_root.gender,
+                        family_root.sexuality
                     ).choose(&mut rng).unwrap();
 
                     relative
@@ -78,20 +78,20 @@ impl Population {
                 .family(family_name.clone());
 
             self.add(relative.build(language));
-            self.create_relationship(Relationship::new(relation, family_root_id, relative_id));
+            self.relationships.push(Relationship::new(relation, family_root_id, relative_id));
         }
         self.add(family_root);
     }
 
     fn lowest_parent_age(&self, id: usize) -> Option<usize> {
-        self.get_relationships()
+        self.relationships
             .iter()
             .filter(
                 |relationship|
                 relationship.get_person_id(1) == id &&
-                matches!(relationship.get_relationship_type(), RelationshipType::Parent)
+                matches!(relationship.kind, RelationshipType::Parent)
             )
-            .map(|relationship| self.people.get(&relationship.get_person_id(0)).unwrap().get_age())
+            .map(|relationship| self.people.get(&relationship.get_person_id(0)).unwrap().age)
             .collect::<Vec<usize>>()
             .iter()
             .min()
@@ -99,7 +99,7 @@ impl Population {
     }
 
     pub fn add(&mut self, person: Human) {
-        self.people.insert(person.get_id(), person);
+        self.people.insert(person.id, person);
     }
 }
 
