@@ -11,7 +11,7 @@ pub struct Population {
     generators: Vec<TextGenerator>,
     elapsed_time: usize,
     last_id: usize,
-    people: HashMap<usize, Human>,
+    pub people: HashMap<usize, Human>,
     relationships: Vec<Relationship>
 }
 

@@ -4,8 +4,8 @@ use angelspeech::generator::text_generator::TextGenerator;
 use crate::generation::{
     population::Population,
     people::{
-        human::Human,
-        attributes::{Gender, Sexuality, RelationshipType},
+        human::{HumanBuilder, Human},
+        attributes::RelationshipType,
     },
     relationship::Relationship,
     constants::*
@@ -25,7 +25,6 @@ impl Population {
             remaining_pop -= family_size;
             population.new_family(family_size, &generators)
         }
-
         population
     }
 
@@ -37,85 +36,51 @@ impl Population {
         // Using first person as family root so that relationships can be created
         // Root is guaranteed to be at least 18 years old
         let family_root_id = self.next_id();
-        self.add_person(
-            Some(family_root_id),
-            Some(language.random_length_word(1, 5)),
-            Some(family_name.clone()),
-            None,
-            None,
-            Some(rng.gen_range(LEGAL_AGE..=(MAX_AGE-LEGAL_AGE))),
-            None
-        );
-        let family_root = &self.get_pop().get(&family_root_id).unwrap();
+        let mut family_root = HumanBuilder::new();
+        family_root
+            .id(family_root_id)
+            .random_name(language)
+            .family(family_name.clone())
+            .random_legal_age();
+        let family_root = family_root.build(language);
 
+        // TODO: add rayon if possible
         for _ in 0..family_size-1 {
             let relation: RelationshipType = rand::random();
-
             let lowest_parent_age = self.lowest_parent_age(family_root_id);
+            let relative_id = self.next_id();
+            let mut relative = HumanBuilder::new();
 
-            let (age, relative_gender, relative_sexuality): (Option<usize>, Option<Gender>, Option<Sexuality>) = match relation {
-                RelationshipType::Child => {(
-                        Some(rng.gen_range(0..=(family_root.get_age() - LEGAL_AGE))),
-                        None,
-                        None
-                )},
-                RelationshipType::Parent => {(
-                        Some(rng.gen_range((family_root.get_age() + LEGAL_AGE)..=MAX_AGE)),
-                        None,
-                        None
-                )},
+            match relation {
+                RelationshipType::Child => { relative.random_child_age(family_root.get_age()) },
+                RelationshipType::Parent => { relative.random_parent_age(family_root.get_age()) },
                 RelationshipType::Spouse => {
-                    let spouse = Human::get_valid_spouses(
+                    let spouse_ages = family_root.get_valid_spouse_ages().unwrap();
+                    let (spouse_gender, spouse_sexuality) = Human::get_valid_spouses(
                         family_root.get_gender(),
                         family_root.get_sexuality()
                     ).choose(&mut rng).unwrap();
 
-                    let valid_spouse_ages = family_root.get_valid_spouse_ages().unwrap();
-                    (
-                        Some(rng.gen_range(Ord::max(valid_spouse_ages.0, LEGAL_AGE)..valid_spouse_ages.1)),
-                        Some(spouse.0),
-                        Some(spouse.1)
-                    )
+                    relative
+                        .random_spouse_age(spouse_ages)
+                        .gender(*spouse_gender)
+                        .sexuality(*spouse_sexuality)
                 },
                 RelationshipType::Sibling => {
-                    let lower_parent_age: Option<usize> = self.get_relationships()
-                        .iter()
-                        .filter(
-                            |relationship|
-                            relationship.get_person_id(1) == family_root.get_id() &&
-                            matches!(relationship.get_relationship_type(), RelationshipType::Parent)
-                        )
-                        .map(|relationship| self.get_pop().get(&relationship.get_person_id(0)).unwrap().get_age())
-                        .collect::<Vec<usize>>()
-                        .iter()
-                        .min()
-                        .copied();
-
-                    if let Some(age) = lower_parent_age {(
-                        Some(rng.gen_range(0..(age - LEGAL_AGE))),
-                        None,
-                        None
-                    )}
-                    else {(
-                        Some(rng.gen_range(0..=MAX_AGE)),
-                        None,
-                        None
-                    )}
+                    if let Some(age) = lowest_parent_age { relative.age(age) }
+                    else { relative.age(rng.gen_range(0..=MAX_AGE)) }
                 }
             };
 
-            let relative_id = self.next_id();
-            self.add_person(
-                Some(relative_id),
-                Some(language.random_length_word(1, 5)),
-                Some(family_name.clone()),
-                relative_gender,
-                relative_sexuality,
-                age,
-                None
-            );
+            relative
+                .id(relative_id)
+                .random_name(language)
+                .family(family_name.clone());
+
+            self.add(relative.build(language));
             self.create_relationship(Relationship::new(relation, family_root_id, relative_id));
         }
+        self.add(family_root);
     }
 
     fn lowest_parent_age(&self, id: usize) -> Option<usize> {
@@ -126,43 +91,15 @@ impl Population {
                 relationship.get_person_id(1) == id &&
                 matches!(relationship.get_relationship_type(), RelationshipType::Parent)
             )
-            .map(|relationship| self.get_pop().get(&relationship.get_person_id(0)).unwrap().get_age())
+            .map(|relationship| self.people.get(&relationship.get_person_id(0)).unwrap().get_age())
             .collect::<Vec<usize>>()
             .iter()
             .min()
-            .clone()
+            .copied()
     }
 
-
-    fn request_word(&self) -> String {
-        let mut rng = rand::thread_rng();
-        let language = self.get_generators().choose(&mut rng).unwrap();
-        language.random_length_word(1, 5)
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub fn add_person(
-        &mut self,
-        id: Option<usize>,
-        name: Option<String>,
-        family: Option<String>,
-        gender: Option<Gender>,
-        sexuality: Option<Sexuality>,
-        age: Option<usize>,
-        phenotype: Option<usize>,
-    ) {
-        let mut rng = rand::thread_rng();
-        let person = Human {
-            id: id.unwrap_or_else(|| self.next_id()),
-            name: name.unwrap_or_else(|| self.request_word()),
-            family: family.unwrap_or_else(|| self.request_word()),
-            gender: gender.unwrap_or_else(rand::random),
-            sexuality: sexuality.unwrap_or_else(rand::random),
-            age: age.unwrap_or_else(|| rng.gen_range(0..=MAX_INITIAL_AGE)),
-            phenotype: phenotype.unwrap_or_else(|| rng.gen_range(0..=65535)),
-            alive: true,
-        };
-        self.get_pop().insert(person.get_id(), person);
+    pub fn add(&mut self, person: Human) {
+        self.people.insert(person.get_id(), person);
     }
 }
 
