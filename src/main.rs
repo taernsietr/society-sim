@@ -5,8 +5,8 @@ use generation::population::Population;
 use helpers::load_generators;
 
 fn main() {
-    let running_time = 365 * 10;
-    let initial_pop = 64;
+    let running_time = 365 * 500;
+    let initial_pop = 4096;
     let generators = load_generators();
     let mut population = Population::new(initial_pop, &generators);
 

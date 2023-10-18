@@ -44,7 +44,6 @@ impl Population {
             .random_legal_age();
         let family_root = family_root.build(language);
 
-        // TODO: add rayon if possible
         for _ in 0..family_size-1 {
             let relation: RelationshipType = rand::random();
             let lowest_parent_age = self.lowest_parent_age(family_root_id);

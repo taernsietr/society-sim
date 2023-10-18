@@ -156,18 +156,20 @@ impl Human {
     fn check_death(&mut self) {
         let mut rng = rand::thread_rng(); 
 
-        let death_threshold = 1 + self.age * 5 / MAX_AGE;
-        let roll = rng.gen_range(0..=100);
+        //let death_threshold = 1 + self.age * 5 / MAX_AGE;
+        //let roll = rng.gen_range(0..=100);
 
-        if roll <= death_threshold {
+        if rng.gen_bool(0.9/1.0) {
+        //if roll <= death_threshold {
             self.alive = false;
             println!(
-                "[DEATH]: {}, {}, {}, has died. [{:.2} | {:.2}]",
+                //"[DEATH]: {}, {}, {}, has died. [{:.2} | {:.2}]",
+                "[DEATH]: {}, {}, {}, has died.",
                 self.family,
                 self.name,
                 self.get_formatted_age().0,
-                roll,
-                death_threshold
+                //roll,
+                //death_threshold
             );
         }
     }
