@@ -22,7 +22,10 @@ pub struct HumanBuilder {
 #[allow(dead_code)]
 impl HumanBuilder {
     pub fn new() -> HumanBuilder {
-        HumanBuilder::default()
+        HumanBuilder {
+            alive: Some(true),
+            ..HumanBuilder::default()
+        }
     }
 
     pub fn id(&mut self, id: usize) -> &mut Self {
@@ -159,7 +162,7 @@ impl Human {
         //let death_threshold = 1 + self.age * 5 / MAX_AGE;
         //let roll = rng.gen_range(0..=100);
 
-        if rng.gen_bool(0.9/1.0) {
+        if rng.gen_bool(self.age as f64 / MAX_AGE as f64) {
         //if roll <= death_threshold {
             self.alive = false;
             println!(
