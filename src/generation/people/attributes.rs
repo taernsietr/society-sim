@@ -1,7 +1,8 @@
 use std::fmt;
 use rand::{Rng, distributions::{Distribution, Standard}};
+use serde::Serialize;
 
-#[derive(Clone, Copy, Default, Debug)]
+#[derive(Clone, Copy, Default, Debug, Serialize)]
 pub enum Gender {
     #[default]
     CisMale,
@@ -11,7 +12,7 @@ pub enum Gender {
     NonBinary,
 }
 
-#[derive(Clone, Copy, Default, Debug)]
+#[derive(Clone, Copy, Default, Debug, Serialize)]
 pub enum Sexuality {
     #[default]
     Heterosexual,

@@ -1,4 +1,5 @@
 use rand::Rng;
+use serde::Serialize;
 
 use crate::generation::{
     people::attributes::{Sexuality, Gender},
@@ -69,7 +70,7 @@ impl HumanBuilder {
     }
 
     pub fn random_name(&mut self, language: &TextGenerator) -> &mut Self {
-        self.name = language.random_length_word(1, 5).into();
+        self.name = language.random_length_word(1, 5, 0.4).into();
         self
     }
 
@@ -101,8 +102,8 @@ impl HumanBuilder {
         let mut rng = rand::thread_rng();
         Human {
             id: self.id.unwrap(),
-            name: self.name.clone().unwrap_or_else(|| language.random_length_word(1, 5)),
-            family: self.family.clone().unwrap_or_else(|| language.random_length_word(1, 5)),
+            name: self.name.clone().unwrap_or_else(|| language.random_length_word(1, 5, 0.4)),
+            family: self.family.clone().unwrap_or_else(|| language.random_length_word(1, 5, 0.4)),
             gender: self.gender.unwrap_or_else(rand::random),
             sexuality: self.sexuality.unwrap_or_else(rand::random),
             age: self.age.unwrap_or_else(|| rng.gen_range(0..=MAX_INITIAL_AGE)),
@@ -112,7 +113,7 @@ impl HumanBuilder {
     }
 }
 
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Default, Debug, Serialize)]
 pub struct Human {
     pub id: usize,
     pub name: String,

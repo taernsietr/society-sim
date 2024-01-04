@@ -54,5 +54,11 @@ impl Population {
             println!("{}", person.1);
         }
     }
+
+    pub fn json(&self) -> String {
+        let people = &self.people.values().collect::<Vec<&Human>>();
+        serde_json::to_string(people).unwrap()
+    }
 }
+
 

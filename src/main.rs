@@ -6,7 +6,7 @@ use helpers::load_generators;
 
 fn main() {
     let running_time = 365 * 10;
-    let initial_pop = 128;
+    let initial_pop = 64;
     let generators = load_generators();
     let mut population = Population::new(initial_pop, &generators);
 
@@ -14,9 +14,10 @@ fn main() {
         population.tick();
     }
 
-    population.print_population();
+    //population.print_population();
 
-    println!("[Initial population: {}]", initial_pop);
-    println!("[Final population: {}]", population.people.len());
-    println!("[Survival rate: {}%]", population.get_survival_rate());
+    //println!("[Initial population: {}]", initial_pop);
+    //println!("[Final population: {}]", population.people.len());
+    //println!("[Survival rate: {}%]", population.get_survival_rate());
+    print!("{}", population.json());
 }

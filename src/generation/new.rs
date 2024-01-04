@@ -31,7 +31,7 @@ impl Population {
     pub fn new_family(&mut self, family_size: usize, generators: &[TextGenerator]) {
         let mut rng = rand::thread_rng();
         let language = &generators.choose(&mut rng).unwrap();
-        let family_name = language.random_length_word(1, 5);
+        let family_name = language.random_length_word(1, 5, 0.4);
 
         // Using first person as family root so that relationships can be created
         // Root is guaranteed to be at least 18 years old
